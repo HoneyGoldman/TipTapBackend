@@ -1,0 +1,322 @@
+{
+  "info": {
+    "name": "WaiterJobs API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "e2a0f6fb-6b66-4a90-8d4a-0aa0f3f1f001"
+  },
+  "item": [
+    {
+      "name": "0 - Variables",
+      "item": [
+        {
+          "name": "Set Base URL (no request)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('baseUrl', pm.collectionVariables.get('baseUrl') || 'http://localhost');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1 - Auth",
+      "item": [
+        {
+          "name": "Register Manager",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"Manager One\",\n  \"email\": \"manager1@example.com\",\n  \"password\": \"Passw0rd!\",\n  \"business_name\": \"Cafe Luna\",\n  \"business_location\": \"Tel Aviv\",\n  \"business_type\": \"cafe\",\n  \"menu_url\": \"https://example.com/menu.pdf\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register-manager"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('manager_access_token', json.access_token);",
+                  "pm.collectionVariables.set('manager_refresh_token', json.refresh_token);",
+                  "pm.collectionVariables.set('manager_timeout_token', json.timeout_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Manager",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"manager1@example.com\",\n  \"password\": \"Passw0rd!\"\n}"},
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": [
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set('manager_access_token', json.access_token);"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "Login Waiter (after waiter created)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"waiter1@example.com\",\n  \"password\": \"Passw0rd!\"\n}"},
+            "url": "{{baseUrl}}/auth/login"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": [
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set('waiter_access_token', json.access_token);"
+              ]}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 - Waiters",
+      "item": [
+        {
+          "name": "Create Waiter (manager-auth)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{manager_access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"display_name\": \"Waiter One\",\n  \"email\": \"waiter1@example.com\",\n  \"password\": \"Passw0rd!\",\n  \"status\": \"pre_army\",\n  \"looking_for\": [\"waiter\", \"bartender\"],\n  \"about_me\": \"Friendly and fast.\",\n  \"distance_km\": 10,\n  \"min_hourly_wage\": 40,\n  \"shifts_per_week\": 4,\n  \"hours\": [\"morning\", \"weekends\"],\n  \"experience\": [\"waiter\"],\n  \"people_say\": [\"good_vibe\"],\n  \"skills\": [\"customer_service\", \"teamwork\"]\n}"
+            },
+            "url": "{{baseUrl}}/waiters"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": [
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set('waiter_user_id', json.user_id);",
+                "pm.collectionVariables.set('waiter_email', json.email);"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "Get Waiter",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{manager_access_token}}"}
+            ],
+            "url": "{{baseUrl}}/waiters/{{waiter_user_id}}"
+          }
+        },
+        {
+          "name": "Update Waiter",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{waiter_access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"about_me\": \"Updated bio\",\n  \"looking_for\": [\"waiter\", \"barista\"]\n}"},
+            "url": "{{baseUrl}}/waiters/{{waiter_user_id}}"
+          }
+        },
+        {
+          "name": "Manager Likes Waiter",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{manager_access_token}}"}
+            ],
+            "url": "{{baseUrl}}/waiters/{{waiter_user_id}}/like"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 - Businesses",
+      "item": [
+        {
+          "name": "Create Business",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{manager_access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"name\": \"Cafe Luna\",\n  \"location\": \"Tel Aviv\",\n  \"business_type\": \"cafe\",\n  \"menu_url\": \"https://example.com/menu.pdf\"\n}"},
+            "url": "{{baseUrl}}/businesses"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": [
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set('business_id', json.id);"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "List Businesses (manager)",
+          "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{manager_access_token}}"}], "url": "{{baseUrl}}/businesses"}
+        },
+        {
+          "name": "Get Business",
+          "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{manager_access_token}}"}], "url": "{{baseUrl}}/businesses/{{business_id}}"}
+        }
+      ]
+    },
+    {
+      "name": "4 - Roles",
+      "item": [
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{manager_access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"business_id\": {{business_id}},\n  \"position\": \"waiter\",\n  \"payment_per_hour\": 45,\n  \"location\": \"Tel Aviv\",\n  \"when_need\": \"this_week\",\n  \"experience_required\": \"no_experience\",\n  \"shift_morning\": true,\n  \"shift_evening\": false,\n  \"shift_weekends\": true,\n  \"shift_full_time\": false,\n  \"shift_part_time\": true,\n  \"about_job\": \"Friendly team\"\n}"},
+            "url": "{{baseUrl}}/roles"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": [
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set('role_id', json.id);"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "List Roles (public)",
+          "request": {"method": "GET", "url": "{{baseUrl}}/roles"}
+        },
+        {
+          "name": "Get Role (public)",
+          "request": {"method": "GET", "url": "{{baseUrl}}/roles/{{role_id}}"}
+        },
+        {
+          "name": "Waiter Likes Role",
+          "request": {"method": "POST", "header": [{"key": "Authorization", "value": "Bearer {{waiter_access_token}}"}], "url": "{{baseUrl}}/roles/{{role_id}}/like"}
+        }
+      ]
+    },
+    {
+      "name": "5 - Notifications",
+      "item": [
+        {
+          "name": "List Notifications (waiter)",
+          "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{waiter_access_token}}"}], "url": "{{baseUrl}}/notifications"}
+        },
+        {
+          "name": "List Notifications (manager)",
+          "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{manager_access_token}}"}], "url": "{{baseUrl}}/notifications"}
+        }
+      ]
+    },
+    {
+      "name": "6 - Reports",
+      "item": [
+        {
+          "name": "Run Report (manager)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{manager_access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"report_name\": \"roles_by_position\",\n  \"parameters\": {\n    \"p_position\": \"waiter\"\n  }\n}"},
+            "url": "{{baseUrl}}/reports/run"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7 - Chat (optional)",
+      "item": [
+        {
+          "name": "Create Conversation (manager)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{manager_access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"participant_user_ids\": [{{waiter_user_id}}]\n}"},
+            "url": "{{baseUrl}}/chat/conversations"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": [
+                "const json = pm.response.json();",
+                "pm.collectionVariables.set('conversation_id', json.id);"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "Send Message (manager)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{manager_access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {"mode": "raw", "raw": "{\n  \"conversation_id\": {{conversation_id}},\n  \"body\": \"Hello!\"\n}"},
+            "url": "{{baseUrl}}/chat/messages"
+          }
+        },
+        {
+          "name": "List Messages (waiter)",
+          "request": {"method": "GET", "header": [{"key": "Authorization", "value": "Bearer {{waiter_access_token}}"}], "url": {"raw": "{{baseUrl}}/chat/messages?conversation_id={{conversation_id}}", "host": ["{{baseUrl}}"], "path": ["chat", "messages"], "query": [{"key": "conversation_id", "value": "{{conversation_id}}"}]}}
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {"key": "baseUrl", "value": "http://localhost"},
+    {"key": "manager_access_token", "value": ""},
+    {"key": "waiter_access_token", "value": ""},
+    {"key": "waiter_user_id", "value": ""},
+    {"key": "business_id", "value": ""},
+    {"key": "role_id", "value": ""},
+    {"key": "conversation_id", "value": ""}
+  ]
+}
+
+

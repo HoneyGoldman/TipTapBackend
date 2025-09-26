@@ -1,0 +1,9 @@
+{
+  "app_name": "WaiterJobs",
+  "jwt_secret": "CHANGE_ME",
+  "jwt_alg": "HS256",
+  "access_minutes": 30,
+  "refresh_days": 30,
+  "timeout_minutes": 5,
+  "mysql_dsn": "mysql+pymysql://root:Hg234567@127.0.0.1:3306/waiter_jobs"
+}
