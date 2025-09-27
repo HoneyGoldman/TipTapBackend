@@ -5,6 +5,11 @@
   "access_minutes": 30,
   "refresh_days": 30,
   "timeout_minutes": 5,
-  "mysql_dsn": "mysql+pymysql://appuser:STRONGPASS@mysql:3306/waiter_jobs"
+  "mysql_dsn": "mysql+pymysql://appuser:STRONGPASS@mysql:3306/waiter_jobs",
+  "cloudinary": {
+    "cloud_name": "drnc0qebf",
+    "api_key": "557974514591419",
+    "api_secret": "PBxdpu-WjetIGnZ463lDEbF3vps"
+  }
 }
 

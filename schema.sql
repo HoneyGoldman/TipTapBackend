@@ -81,14 +81,24 @@ CREATE TABLE IF NOT EXISTS waiter_looking_for (
 -- Businesses
 CREATE TABLE IF NOT EXISTS business (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  manager_user_id BIGINT UNSIGNED NOT NULL,
   name VARCHAR(255) NOT NULL,
   location VARCHAR(255) NOT NULL,
   menu_url VARCHAR(500) NULL,
+  images JSON NULL,
   business_type ENUM('bar','restaurant','cafe','hotel') NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  CONSTRAINT fk_business_manager FOREIGN KEY (manager_user_id) REFERENCES user_account(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Business managers (many-to-many: multiple managers per business)
+CREATE TABLE IF NOT EXISTS business_manager (
+  business_id BIGINT UNSIGNED NOT NULL,
+  manager_user_id BIGINT UNSIGNED NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (business_id, manager_user_id),
+  CONSTRAINT fk_bm_business FOREIGN KEY (business_id) REFERENCES business(id) ON DELETE CASCADE,
+  CONSTRAINT fk_bm_manager FOREIGN KEY (manager_user_id) REFERENCES user_account(id) ON DELETE CASCADE,
+  KEY idx_bm_manager (manager_user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Roles (job postings)

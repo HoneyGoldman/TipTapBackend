@@ -113,12 +113,34 @@ All endpoints require Authorization header.
 - POST /businesses
   - Body:
   ```json
-  { "name": "Cafe Luna", "location": "Tel Aviv", "business_type": "cafe", "menu_url": "https://example.com/menu.pdf" }
+  {
+    "name": "Cafe Luna",
+    "location": "Tel Aviv",
+    "business_type": "cafe",
+    "menu_url": "https://example.com/menu.pdf",
+    "images": [
+      "https://res.cloudinary.com/<cloud>/image/upload/v1699999999/cafe-1.jpg"
+    ],
+    "manager_user_ids": [123, 456]
+  }
   ```
   - Response:
   ```json
-  { "id": 1, "manager_user_id": 123, "name": "Cafe Luna", "location": "Tel Aviv", "business_type": "cafe", "menu_url": "https://example.com/menu.pdf" }
+  {
+    "id": 1,
+    "manager_user_ids": [123, 456],
+    "name": "Cafe Luna",
+    "location": "Tel Aviv",
+    "business_type": "cafe",
+    "menu_url": "https://example.com/menu.pdf",
+    "images": [
+      "https://res.cloudinary.com/<cloud>/image/upload/v1699999999/cafe-1.jpg"
+    ]
+  }
   ```
+  - Notes:
+    - If `manager_user_ids` is omitted, the authenticated user is added as a manager.
+    - `images` is an array of image URLs (Cloudinary). You can also upload files via a dedicated endpoint below.
 
 - GET /businesses
   - Response: [BusinessOut]
@@ -127,8 +149,54 @@ All endpoints require Authorization header.
   - Response: BusinessOut
 
 - PUT /businesses/{business_id}
-  - Body: partial update fields (name, location, business_type, menu_url)
+  - Body (any subset):
+  ```json
+  {
+    "name": "Cafe Luna Updated",
+    "location": "Herzliya",
+    "business_type": "cafe",
+    "menu_url": "https://example.com/menu-v2.pdf",
+    "images": [
+      "https://res.cloudinary.com/<cloud>/image/upload/v1699999999/cafe-1.jpg",
+      "https://res.cloudinary.com/<cloud>/image/upload/v1699999999/cafe-2.jpg"
+    ]
+  }
+  ```
   - Response: BusinessOut
+  - Notes: Setting `images` here replaces the entire list. To append images, use the upload endpoint.
+
+- POST /businesses/{business_id}/images
+  - Description: Upload one or more images (multipart/form-data). Files are stored in Cloudinary; the resulting secure URLs are appended to `images`.
+  - Request: multipart/form-data with field name `files` (can repeat or send multiple files)
+  - Response: BusinessOut
+  - Example (curl):
+  ```bash
+  curl -X POST \
+    -H "Authorization: Bearer <access_token>" \
+    -F "files=@/path/to/pic1.jpg" \
+    -F "files=@/path/to/pic2.jpg" \
+    http://localhost:8000/businesses/1/images
+  ```
+
+- POST /businesses/{business_id}/managers
+  - Description: Add an existing business manager to the business by email.
+  - Body:
+  ```json
+  { "email": "manager2@example.com" }
+  ```
+  - Response: BusinessOut (with updated `manager_user_ids`)
+  - Notes:
+    - Only a current manager of the business can add another manager.
+    - The target user must exist and have `user_type` = `business_manager`.
+    - Phone-based add is not yet supported and returns 400 if provided.
+  - Example (curl):
+  ```bash
+  curl -X POST \
+    -H "Authorization: Bearer <access_token>" \
+    -H "Content-Type: application/json" \
+    -d '{"email":"manager2@example.com"}' \
+    http://localhost:8000/businesses/1/managers
+  ```
 
 - DELETE /businesses/{business_id}
   - Response: { "ok": true }

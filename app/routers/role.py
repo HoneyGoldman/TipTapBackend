@@ -4,7 +4,7 @@ from sqlalchemy import select, insert, update, delete
 from typing import List
 from app.core.deps import get_db, AuthUser
 from app.models.role import Role, RoleLike
-from app.models.business import Business
+from app.models.business import Business, BusinessManager
 from app.schemas.role import RoleCreate, RoleUpdate, RoleOut
 
 
@@ -13,8 +13,8 @@ router = APIRouter(prefix="/roles", tags=["roles"])
 
 @router.post("/", response_model=RoleOut, dependencies=[Depends(AuthUser)])
 def create_role(payload: RoleCreate, db: Session = Depends(get_db), user=Depends(AuthUser)):
-    b = db.execute(select(Business).where(Business.id == payload.business_id, Business.manager_user_id == user.id)).scalar_one_or_none()
-    if not b:
+    owned = db.execute(select(BusinessManager).where(BusinessManager.business_id == payload.business_id, BusinessManager.manager_user_id == user.id)).first()
+    if not owned:
         raise HTTPException(403, "Not your business")
     r = Role(**payload.model_dump())
     db.add(r)
@@ -95,8 +95,8 @@ def update_role(role_id: int, payload: RoleUpdate, db: Session = Depends(get_db)
     if not r:
         raise HTTPException(404, "Not found")
     # Only manager of the business can update
-    b = db.execute(select(Business).where(Business.id == r.business_id, Business.manager_user_id == user.id)).scalar_one_or_none()
-    if not b:
+    owned = db.execute(select(BusinessManager).where(BusinessManager.business_id == r.business_id, BusinessManager.manager_user_id == user.id)).first()
+    if not owned:
         raise HTTPException(403, "Not your business")
     updates = {k: v for k, v in payload.model_dump(exclude_unset=True).items()}
     if updates:
@@ -127,8 +127,8 @@ def delete_role(role_id: int, db: Session = Depends(get_db), user=Depends(AuthUs
     r = db.execute(select(Role).where(Role.id == role_id)).scalar_one_or_none()
     if not r:
         raise HTTPException(404, "Not found")
-    b = db.execute(select(Business).where(Business.id == r.business_id, Business.manager_user_id == user.id)).scalar_one_or_none()
-    if not b:
+    owned = db.execute(select(BusinessManager).where(BusinessManager.business_id == r.business_id, BusinessManager.manager_user_id == user.id)).first()
+    if not owned:
         raise HTTPException(403, "Not your business")
     db.execute(delete(Role).where(Role.id == role_id))
     db.commit()
@@ -148,17 +148,20 @@ def like_role(role_id: int, db: Session = Depends(get_db), user=Depends(AuthUser
         db.commit()
     # check if manager liked waiter (mutual)
     from app.models.user import ManagerLikeWaiter
-    liked = db.execute(
-        select(ManagerLikeWaiter).where(
-            ManagerLikeWaiter.manager_user_id == db.execute(select(Business.manager_user_id).where(Business.id == r.business_id)).scalar_one(),
-            ManagerLikeWaiter.waiter_user_id == user.id
-        )
-    ).scalar_one_or_none()
+    # Any manager of this business liked this waiter?
+    manager_ids = [x[0] for x in db.execute(select(BusinessManager.manager_user_id).where(BusinessManager.business_id == r.business_id)).all()]
+    liked = None
+    if manager_ids:
+        liked = db.execute(
+            select(ManagerLikeWaiter).where(
+                ManagerLikeWaiter.manager_user_id.in_(manager_ids),
+                ManagerLikeWaiter.waiter_user_id == user.id
+            )
+        ).scalar_one_or_none()
     if liked:
         # create notification for mutual match
         from app.models.notification import Notification
         db.add(Notification(user_id=user.id, type="new_match", payload={"role_id": role_id}))
-        db.add(Notification(user_id=r.business_id, type="new_match", payload={"waiter_user_id": user.id}))
         db.commit()
         return {"liked": True, "mutual_match": True}
     return {"liked": True, "mutual_match": False}
