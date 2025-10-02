@@ -10,6 +10,7 @@ from app.schemas.notification import NotificationCreate, NotificationOut
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
+@router.get("", response_model=List[NotificationOut], dependencies=[Depends(AuthUser)])
 @router.get("/", response_model=List[NotificationOut], dependencies=[Depends(AuthUser)])
 def list_notifications(db: Session = Depends(get_db), user=Depends(AuthUser)):
     rows = db.execute(select(Notification).where(Notification.user_id == user.id).order_by(Notification.created_at.desc())).scalars().all()

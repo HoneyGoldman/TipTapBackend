@@ -41,6 +41,7 @@ def create_role(payload: RoleCreate, db: Session = Depends(get_db), user=Depends
     })
 
 
+@router.get("", response_model=List[RoleOut], dependencies=[Depends(AuthUser)])
 @router.get("/", response_model=List[RoleOut], dependencies=[Depends(AuthUser)])
 def list_roles(db: Session = Depends(get_db), user=Depends(AuthUser)):
     # Auth listing: return active roles not yet liked by user

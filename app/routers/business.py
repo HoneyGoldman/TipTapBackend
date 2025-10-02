@@ -45,6 +45,7 @@ def create_business(payload: BusinessCreate, db: Session = Depends(get_db), user
     )
 
 
+@router.get("", response_model=List[BusinessOut], dependencies=[Depends(AuthUser)])
 @router.get("/", response_model=List[BusinessOut], dependencies=[Depends(AuthUser)])
 def list_businesses(db: Session = Depends(get_db), user=Depends(AuthUser)):
     biz_ids = [r[0] for r in db.execute(select(BusinessManager.business_id).where(BusinessManager.manager_user_id == user.id)).all()]

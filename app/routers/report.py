@@ -19,7 +19,12 @@ def run_report(body: ReportRunRequest, db: Session = Depends(get_db)):
     if not cfg:
         raise HTTPException(status_code=404, detail="Report not found")
 
-    schema = json.loads(cfg.parameters)
+    # parameters is stored as a JSON column; in most drivers this is returned as a Python object
+    # Support both cases (string vs already-parsed list)
+    if isinstance(cfg.parameters, str):
+        schema = json.loads(cfg.parameters)
+    else:
+        schema = cfg.parameters
     # Validate params, apply defaults
     call_args = []
     for p in schema:

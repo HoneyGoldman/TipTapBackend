@@ -15,55 +15,26 @@ Tokens object (response)
 }
 ```
 
-### 1) Auth
+### 1) Auth (via dynamic reports)
 
-- POST /auth/register-manager
+- Register manager (basic): POST /reports/run
   - Body:
   ```json
   {
-    "display_name": "Manager One",
-    "email": "manager1@example.com",
-    "password": "Passw0rd!",
-    "business_name": "Cafe Luna",
-    "business_location": "Tel Aviv",
-    "business_type": "cafe",
-    "menu_url": "https://example.com/menu.pdf"
+    "report_name": "user_register_manager_basic",
+    "parameters": {
+      "p_display_name": "Manager One",
+      "p_email": "manager1@example.com",
+      "p_password_hash": "<bcrypt-or-pbkdf2-hash>"
+    }
   }
   ```
-  - Response: Tokens
 
-- POST /auth/register-manager-basic
+- Get user by email: POST /reports/run
   - Body:
   ```json
-  {
-    "display_name": "Manager One",
-    "email": "manager1@example.com",
-    "password": "Passw0rd!"
-  }
+  { "report_name": "user_get_by_email", "parameters": { "p_email": "user@example.com" } }
   ```
-  - Response: Tokens
-  - Notes: Creates a manager account only (no business). You can add the user as a manager to an existing business later via `POST /businesses/{business_id}/managers`.
-
-- POST /auth/register
-  - Creates a basic waiter account; minimal payload same as login request
-  - Body:
-  ```json
-  {
-    "email": "waiter1@example.com",
-    "password": "Passw0rd!"
-  }
-  ```
-  - Response: Tokens
-
-- POST /auth/login
-  - Body:
-  ```json
-  {
-    "email": "manager1@example.com",
-    "password": "Passw0rd!"
-  }
-  ```
-  - Response: Tokens
 
 - POST /auth/refresh
   - Body:
@@ -75,66 +46,44 @@ Tokens object (response)
 
 Notes: Passwords are stored with PBKDF2-SHA256. No 72-byte limit.
 
-### 2) Waiters
+### 2) Waiters (via dynamic reports)
 
-All endpoints require Authorization header.
-
-- POST /waiters
-  - Body (WaiterCreate):
+- Register waiter (full): POST /reports/run
+  - Body:
   ```json
   {
-    "display_name": "Waiter One",
-    "email": "waiter1@example.com",
-    "password": "Passw0rd!",
-    "status": "pre_army",
-    "looking_for": ["waiter", "bartender"],
-    "about_me": "Friendly and fast.",
-    "distance_km": 10,
-    "min_hourly_wage": 40,
-    "shifts_per_week": 4,
-    "hours": ["morning", "weekends"],
-    "experience": ["waiter"],
-    "people_say": ["good_vibe"],
-    "skills": ["customer_service", "teamwork"]
+    "report_name": "waiter_register_full",
+    "parameters": {
+      "p_display_name": "Waiter One",
+      "p_email": "waiter1@example.com",
+      "p_password_hash": "<hash>",
+      "p_status": "pre_army",
+      "p_about_me": "Friendly and fast.",
+      "p_distance_km": 10,
+      "p_min_hourly_wage": 40,
+      "p_shifts_per_week": 4,
+      "p_hours": ["morning"],
+      "p_experience": ["waiter"],
+      "p_people_say": ["good_vibe"],
+      "p_skills": ["teamwork"],
+      "p_looking_for": ["waiter"]
+    }
   }
   ```
-  - Response (WaiterOut): waiter profile with all lists
 
-- GET /waiters/{user_id}
-  - Response: WaiterOut
-
-- PUT /waiters/me
-  - Description: Upsert current user's waiter profile. Creates the profile if it doesn't exist.
-  - Body (any subset of WaiterUpdate):
+- Upsert waiter profile: POST /reports/run
+  - Body:
   ```json
   {
-    "display_name": "Updated Name",
-    "about_me": "Updated bio",
-    "looking_for": ["waiter", "barista"],
-    "hours": ["morning"],
-    "experience": ["waiter"],
-    "people_say": ["good_vibe"],
-    "skills": ["teamwork"]
+    "report_name": "waiter_upsert_profile",
+    "parameters": {
+      "p_user_id": 123,
+      "p_status": "post_army",
+      "p_about_me": "Updated",
+      "p_hours": ["morning","weekends"]
+    }
   }
   ```
-  - Response: WaiterOut
-  - Notes: Requires Authorization header.
-
-- PUT /waiters/{user_id}
-  - Description: Upsert waiter profile by user id. Creates the profile if it doesn't exist.
-  - Body (any subset of WaiterUpdate):
-  ```json
-  {
-    "display_name": "Updated Name",
-    "about_me": "Updated bio",
-    "looking_for": ["waiter", "barista"],
-    "hours": ["morning"],
-    "experience": ["waiter"],
-    "people_say": ["good_vibe"],
-    "skills": ["teamwork"]
-  }
-  ```
-  - Response: WaiterOut
 
 - DELETE /waiters/{user_id}
   - Response: { "ok": true }
@@ -146,61 +95,49 @@ All endpoints require Authorization header.
   { "liked": true, "mutual_match": false }
   ```
 
-### 3) Businesses (manager only)
+### 3) Businesses (via dynamic reports)
 
-- POST /businesses
+- Create business: POST /reports/run
   - Body:
   ```json
   {
-    "name": "Cafe Luna",
-    "location": "Tel Aviv",
-    "business_type": "cafe",
-    "menu_url": "https://example.com/menu.pdf",
-    "images": [
-      "https://res.cloudinary.com/<cloud>/image/upload/v1699999999/cafe-1.jpg"
-    ],
-    "manager_user_ids": [123, 456]
-  }
-  ```
-  - Response:
-  ```json
-  {
-    "id": 1,
-    "manager_user_ids": [123, 456],
-    "name": "Cafe Luna",
-    "location": "Tel Aviv",
-    "business_type": "cafe",
-    "menu_url": "https://example.com/menu.pdf",
-    "images": [
-      "https://res.cloudinary.com/<cloud>/image/upload/v1699999999/cafe-1.jpg"
-    ]
+    "report_name": "business_create",
+    "parameters": {
+      "p_name": "Cafe Luna", "p_location": "Tel Aviv", "p_business_type": "cafe",
+      "p_menu_url": "https://example.com/menu.pdf",
+      "p_images": ["https://.../cafe-1.jpg"],
+      "p_manager_user_ids": [123,456]
+    }
   }
   ```
   - Notes:
     - If `manager_user_ids` is omitted, the authenticated user is added as a manager.
     - `images` is an array of image URLs (Cloudinary). You can also upload files via a dedicated endpoint below.
 
-- GET /businesses
-  - Response: [BusinessOut]
+- List my businesses: POST /reports/run
+  - Body:
+  ```json
+  { "report_name": "business_list_by_manager", "parameters": { "p_manager_user_id": 123 } }
+  ```
 
-- GET /businesses/{business_id}
-  - Response: BusinessOut
+- Get a business: POST /reports/run
+  - Body:
+  ```json
+  { "report_name": "business_get", "parameters": { "p_business_id": 1, "p_manager_user_id": 123 } }
+  ```
 
-- PUT /businesses/{business_id}
-  - Body (any subset):
+- Update business: POST /reports/run
+  - Body (partial updates via JSON):
   ```json
   {
-    "name": "Cafe Luna Updated",
-    "location": "Herzliya",
-    "business_type": "cafe",
-    "menu_url": "https://example.com/menu-v2.pdf",
-    "images": [
-      "https://res.cloudinary.com/<cloud>/image/upload/v1699999999/cafe-1.jpg",
-      "https://res.cloudinary.com/<cloud>/image/upload/v1699999999/cafe-2.jpg"
-    ]
+    "report_name": "business_update",
+    "parameters": {
+      "p_business_id": 1,
+      "p_manager_user_id": 123,
+      "p_updates": { "name": "Cafe Luna Updated", "images": ["https://.../cafe-1.jpg"] }
+    }
   }
   ```
-  - Response: BusinessOut
   - Notes: Setting `images` here replaces the entire list. To append images, use the upload endpoint.
 
 - POST /businesses/{business_id}/images
@@ -216,24 +153,13 @@ All endpoints require Authorization header.
     http://localhost:8000/businesses/1/images
   ```
 
-- POST /businesses/{business_id}/managers
-  - Description: Add an existing business manager to the business by email.
+- Add manager by email: POST /reports/run
   - Body:
   ```json
-  { "email": "manager2@example.com" }
-  ```
-  - Response: BusinessOut (with updated `manager_user_ids`)
-  - Notes:
-    - Only a current manager of the business can add another manager.
-    - The target user must exist and have `user_type` = `business_manager`.
-    - Phone-based add is not yet supported and returns 400 if provided.
-  - Example (curl):
-  ```bash
-  curl -X POST \
-    -H "Authorization: Bearer <access_token>" \
-    -H "Content-Type: application/json" \
-    -d '{"email":"manager2@example.com"}' \
-    http://localhost:8000/businesses/1/managers
+  {
+    "report_name": "business_add_manager_by_email",
+    "parameters": { "p_business_id": 1, "p_requester_id": 123, "p_email": "manager2@example.com" }
+  }
   ```
 
 - DELETE /businesses/{business_id}
