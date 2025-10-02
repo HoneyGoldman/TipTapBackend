@@ -44,3 +44,9 @@ class Tokens(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class ManagerRegisterBasicRequest(BaseModel):
+    display_name: str
+    email: EmailStr
+    password: str

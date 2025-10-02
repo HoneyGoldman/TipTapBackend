@@ -108,6 +108,8 @@ CREATE TABLE IF NOT EXISTS role (
   position ENUM('waiter','bartender','barista','hostess','shift_manager') NOT NULL,
   payment_per_hour DECIMAL(10,2) NOT NULL,
   location VARCHAR(255) NOT NULL,
+  latitude DOUBLE NULL,
+  longitude DOUBLE NULL,
   when_need ENUM('this_week','always_looking') NOT NULL,
   experience_required ENUM('no_experience','some_experience','experience_only') NOT NULL,
   shift_morning TINYINT(1) NOT NULL DEFAULT 0,

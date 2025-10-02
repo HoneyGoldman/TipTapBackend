@@ -26,6 +26,8 @@ def create_role(payload: RoleCreate, db: Session = Depends(get_db), user=Depends
         "position": r.position,
         "payment_per_hour": float(r.payment_per_hour),
         "location": r.location,
+        "latitude": r.latitude,
+        "longitude": r.longitude,
         "when_need": r.when_need,
         "experience_required": r.experience_required,
         "shift_morning": r.shift_morning,
@@ -39,10 +41,11 @@ def create_role(payload: RoleCreate, db: Session = Depends(get_db), user=Depends
     })
 
 
-@router.get("/", response_model=List[RoleOut])
-def list_roles(db: Session = Depends(get_db)):
-    # Public listing: return active roles
-    rows = db.execute(select(Role).where(Role.is_active == True)).scalars().all()
+@router.get("/", response_model=List[RoleOut], dependencies=[Depends(AuthUser)])
+def list_roles(db: Session = Depends(get_db), user=Depends(AuthUser)):
+    # Auth listing: return active roles not yet liked by user
+    subq = select(RoleLike.role_id).where(RoleLike.user_id == user.id)
+    rows = db.execute(select(Role).where(Role.is_active == True, Role.id.not_in(subq))).scalars().all()
     out = []
     for r in rows:
         out.append(RoleOut(**{
@@ -51,6 +54,8 @@ def list_roles(db: Session = Depends(get_db)):
             "position": r.position,
             "payment_per_hour": float(r.payment_per_hour),
             "location": r.location,
+            "latitude": r.latitude,
+            "longitude": r.longitude,
             "when_need": r.when_need,
             "experience_required": r.experience_required,
             "shift_morning": r.shift_morning,
@@ -76,6 +81,8 @@ def get_role(role_id: int, db: Session = Depends(get_db)):
         "position": r.position,
         "payment_per_hour": float(r.payment_per_hour),
         "location": r.location,
+        "latitude": r.latitude,
+        "longitude": r.longitude,
         "when_need": r.when_need,
         "experience_required": r.experience_required,
         "shift_morning": r.shift_morning,

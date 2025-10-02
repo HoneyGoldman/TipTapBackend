@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import select, insert
 from passlib.hash import pbkdf2_sha256
-from app.schemas.auth import LoginRequest, LoginResponse, ManagerRegisterRequest, UserOut, RefreshRequest, Tokens
+from app.schemas.auth import LoginRequest, LoginResponse, ManagerRegisterRequest, UserOut, RefreshRequest, Tokens, ManagerRegisterBasicRequest
 from app.models.user import UserAccount
 from app.models.token import TokenRecord
 from app.core.security import create_tokens, decode_token
@@ -92,6 +92,38 @@ def register_manager(payload: ManagerRegisterRequest, db: Session = Depends(get_
     db.commit()
     db.add(BusinessManager(business_id=biz.id, manager_user_id=user.id))
     db.commit()
+    a, r, t = create_tokens(user.id)
+    db.execute(insert(TokenRecord).values(user_id=user.id, token=a))
+    db.commit()
+    ue = get_user_entity(user.id)
+    return LoginResponse(
+        access_token=a,
+        refresh_token=r,
+        timeout_token=t,
+        user_entity=UserOut(
+            id=ue.id,
+            email=ue.email,
+            display_name=ue.display_name,
+            user_type=ue.user_type,
+            is_active=ue.is_active,
+        ),
+    )
+
+
+@router.post("/register-manager-basic", response_model=LoginResponse)
+def register_manager_basic(payload: ManagerRegisterBasicRequest, db: Session = Depends(get_db)):
+    existing = db.execute(select(UserAccount).where(UserAccount.email == payload.email)).scalar_one_or_none()
+    if existing:
+        raise HTTPException(400, detail="Email exists")
+    user = UserAccount(
+        email=payload.email,
+        password_hash=pbkdf2_sha256.hash(payload.password),
+        display_name=payload.display_name,
+        user_type="business_manager",
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     a, r, t = create_tokens(user.id)
     db.execute(insert(TokenRecord).values(user_id=user.id, token=a))
     db.commit()

@@ -102,15 +102,25 @@ def update_waiter(user_id: int, data: WaiterUpdate, db: Session = Depends(get_db
     if data.display_name is not None:
         db.execute(update(UserAccount).where(UserAccount.id == user_id).values(display_name=data.display_name))
     prof = db.execute(select(WaiterProfile).where(WaiterProfile.user_id == user_id)).scalar_one_or_none()
+    # Upsert: create profile if missing
     if not prof:
-        raise HTTPException(404, "Waiter profile not found")
-    updates = {}
-    for field in ["status", "about_me", "distance_km", "min_hourly_wage", "shifts_per_week"]:
-        value = getattr(data, field)
-        if value is not None and not (isinstance(value, list)):
-            updates[field] = value
-    if updates:
-        db.execute(update(WaiterProfile).where(WaiterProfile.user_id == user_id).values(**updates))
+        prof = WaiterProfile(
+            user_id=user_id,
+            status=data.status or "other",
+            about_me=data.about_me,
+            distance_km=data.distance_km,
+            min_hourly_wage=data.min_hourly_wage,
+            shifts_per_week=data.shifts_per_week,
+        )
+        db.add(prof)
+    else:
+        updates = {}
+        for field in ["status", "about_me", "distance_km", "min_hourly_wage", "shifts_per_week"]:
+            value = getattr(data, field)
+            if value is not None and not (isinstance(value, list)):
+                updates[field] = value
+        if updates:
+            db.execute(update(WaiterProfile).where(WaiterProfile.user_id == user_id).values(**updates))
     if any([data.hours, data.experience, data.people_say, data.skills, data.looking_for]):
         _set_multiselects(
             db,
@@ -124,6 +134,16 @@ def update_waiter(user_id: int, data: WaiterUpdate, db: Session = Depends(get_db
     db.commit()
     user = db.execute(select(UserAccount).where(UserAccount.id == user_id)).scalar_one()
     return _aggregate_waiter(db, user)
+
+
+@router.put("/me", response_model=WaiterOut, dependencies=[Depends(AuthUser)])
+def upsert_my_waiter(data: WaiterUpdate, db: Session = Depends(get_db), user=Depends(AuthUser)):
+    # Ensure current user is a waiter
+    me = db.execute(select(UserAccount).where(UserAccount.id == user.id, UserAccount.user_type == "waiter")).scalar_one_or_none()
+    if not me:
+        raise HTTPException(403, "Only waiter users can update profiles")
+    # Reuse update_waiter logic with current user id
+    return update_waiter(user.id, data, db)
 
 
 @router.delete("/{user_id}", dependencies=[Depends(AuthUser)])

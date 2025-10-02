@@ -12,6 +12,8 @@ class RoleCreate(BaseModel):
     position: Position
     payment_per_hour: float
     location: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     when_need: WhenNeed
     experience_required: ExperienceRequired
     shift_morning: bool = False
@@ -28,6 +30,8 @@ class RoleUpdate(BaseModel):
     position: Optional[Position] = None
     payment_per_hour: Optional[float] = None
     location: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     when_need: Optional[WhenNeed] = None
     experience_required: Optional[ExperienceRequired] = None
     shift_morning: Optional[bool] = None
@@ -46,6 +50,8 @@ class RoleOut(BaseModel):
     position: Position
     payment_per_hour: float
     location: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     when_need: WhenNeed
     experience_required: ExperienceRequired
     shift_morning: bool

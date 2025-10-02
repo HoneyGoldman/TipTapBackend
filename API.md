@@ -32,6 +32,18 @@ Tokens object (response)
   ```
   - Response: Tokens
 
+- POST /auth/register-manager-basic
+  - Body:
+  ```json
+  {
+    "display_name": "Manager One",
+    "email": "manager1@example.com",
+    "password": "Passw0rd!"
+  }
+  ```
+  - Response: Tokens
+  - Notes: Creates a manager account only (no business). You can add the user as a manager to an existing business later via `POST /businesses/{business_id}/managers`.
+
 - POST /auth/register
   - Creates a basic waiter account; minimal payload same as login request
   - Body:
@@ -52,6 +64,14 @@ Tokens object (response)
   }
   ```
   - Response: Tokens
+
+- POST /auth/refresh
+  - Body:
+  ```json
+  { "refresh_token": "<refresh_token>" }
+  ```
+  - Response: Tokens
+  - Notes: Rotates tokens and sets the new access token; requires no Authorization header.
 
 Notes: Passwords are stored with PBKDF2-SHA256. No 72-byte limit.
 
@@ -83,8 +103,26 @@ All endpoints require Authorization header.
 - GET /waiters/{user_id}
   - Response: WaiterOut
 
+- PUT /waiters/me
+  - Description: Upsert current user's waiter profile. Creates the profile if it doesn't exist.
+  - Body (any subset of WaiterUpdate):
+  ```json
+  {
+    "display_name": "Updated Name",
+    "about_me": "Updated bio",
+    "looking_for": ["waiter", "barista"],
+    "hours": ["morning"],
+    "experience": ["waiter"],
+    "people_say": ["good_vibe"],
+    "skills": ["teamwork"]
+  }
+  ```
+  - Response: WaiterOut
+  - Notes: Requires Authorization header.
+
 - PUT /waiters/{user_id}
-  - Body (any subset):
+  - Description: Upsert waiter profile by user id. Creates the profile if it doesn't exist.
+  - Body (any subset of WaiterUpdate):
   ```json
   {
     "display_name": "Updated Name",
@@ -211,6 +249,8 @@ All endpoints require Authorization header.
     "position": "waiter",
     "payment_per_hour": 45,
     "location": "Tel Aviv",
+    "latitude": 32.0853,
+    "longitude": 34.7818,
     "when_need": "this_week",
     "experience_required": "no_experience",
     "shift_morning": true,
@@ -223,8 +263,9 @@ All endpoints require Authorization header.
   ```
   - Response: RoleOut
 
-- GET /roles (public)
-  - Response: [RoleOut] for active roles
+- GET /roles (auth)
+  - Description: Returns active roles the current user has not liked yet
+  - Response: [RoleOut]
 
 - GET /roles/{role_id} (public)
   - Response: RoleOut
