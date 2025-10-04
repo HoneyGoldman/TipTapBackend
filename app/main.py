@@ -6,9 +6,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.routers import chat, auth, waiter, business, role, notification, report
+from app.routers import business, report, auth, role
 
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from fastapi.openapi.utils import get_openapi
 from app.models.base import Base, engine
 
@@ -35,23 +36,22 @@ def apply_bearer_openapi(app: FastAPI):
     app.openapi = custom_openapi
 
 
-app = FastAPI(title="WaiterJobs API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Shutdown
+
+
+app = FastAPI(title="WaiterJobs API", lifespan=lifespan)
 apply_bearer_openapi(app)
 
 
-@app.on_event("startup")
-def on_startup():
-    # Create tables if not exist (for quick start; in prod use Alembic)
-    Base.metadata.create_all(bind=engine)
-
-
-app.include_router(auth.router)
-app.include_router(waiter.router)
 app.include_router(business.router)
-app.include_router(role.router)
-app.include_router(notification.router)
 app.include_router(report.router)
-app.include_router(chat.router)
+app.include_router(auth.router)
+app.include_router(role.router)
 
 # python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 

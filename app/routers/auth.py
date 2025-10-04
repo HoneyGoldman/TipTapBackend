@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import select, insert
-from passlib.hash import pbkdf2_sha256
+import hashlib
 from app.schemas.auth import LoginRequest, LoginResponse, ManagerRegisterRequest, UserOut, RefreshRequest, Tokens, ManagerRegisterBasicRequest
 from app.models.user import UserAccount
 from app.models.token import TokenRecord
@@ -14,7 +14,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/login", response_model=LoginResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.execute(select(UserAccount).where(UserAccount.email == payload.email)).scalar_one_or_none()
-    if not user or not pbkdf2_sha256.verify(payload.password, user.password_hash):
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    sha = hashlib.sha256(payload.password.encode("utf-8")).hexdigest()
+    if sha != user.password_hash:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     a, r, t = create_tokens(user.id)
     db.execute(insert(TokenRecord).values(user_id=user.id, token=a))
@@ -41,7 +44,7 @@ def register(payload: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(400, detail="Email exists")
     user = UserAccount(
         email=payload.email,
-        password_hash=pbkdf2_sha256.hash(payload.password),
+        password_hash=hashlib.sha256(payload.password.encode("utf-8")).hexdigest(),
         display_name=payload.email.split("@")[0],
         user_type="waiter",
     )
@@ -73,7 +76,7 @@ def register_manager(payload: ManagerRegisterRequest, db: Session = Depends(get_
         raise HTTPException(400, detail="Email exists")
     user = UserAccount(
         email=payload.email,
-        password_hash=pbkdf2_sha256.hash(payload.password),
+        password_hash=hashlib.sha256(payload.password.encode("utf-8")).hexdigest(),
         display_name=payload.display_name,
         user_type="business_manager",
     )
@@ -117,7 +120,7 @@ def register_manager_basic(payload: ManagerRegisterBasicRequest, db: Session = D
         raise HTTPException(400, detail="Email exists")
     user = UserAccount(
         email=payload.email,
-        password_hash=pbkdf2_sha256.hash(payload.password),
+        password_hash=hashlib.sha256(payload.password.encode("utf-8")).hexdigest(),
         display_name=payload.display_name,
         user_type="business_manager",
     )

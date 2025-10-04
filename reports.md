@@ -44,6 +44,15 @@ Example:
 - Params: p_display_name, p_email, p_password_hash, p_status, p_about_me, p_distance_km, p_min_hourly_wage, p_shifts_per_week, p_hours (json array), p_experience (json array), p_people_say (json array), p_skills (json array), p_looking_for (json array)
 
 ### 6) waiter_upsert_profile
+### 6.1) waiter_get
+- Procedure: sp_waiter_get
+- Params: p_user_id
+
+Example:
+```json
+{ "report_name": "waiter_get", "parameters": { "p_user_id": 123 } }
+```
+
 - Procedure: sp_waiter_upsert_profile
 - Params: p_user_id, p_status, p_about_me, p_distance_km, p_min_hourly_wage, p_shifts_per_week, p_hours (json array), p_experience (json array), p_people_say (json array), p_skills (json array), p_looking_for (json array)
 

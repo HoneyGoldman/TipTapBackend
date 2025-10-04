@@ -6,6 +6,7 @@ from app.models.base import SessionLocal
 from app.core.security import decode_token
 from app.models.token import TokenRecord
 from app.models.user import UserAccount
+from typing import Optional
 
 def get_db():
     db = SessionLocal()
@@ -44,3 +45,18 @@ def AuthUser(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Missing Authorization header")
     token = hdr.split(" ", 1)[1]
     return require_token(token, db)
+
+
+def OptionalAuth(request: Request, db: Session = Depends(get_db)) -> Optional[UserAccount]:
+    """
+    Attempt to authenticate; return None if missing/invalid token.
+    Do NOT raise; authorization will be enforced by callers as needed.
+    """
+    hdr = request.headers.get("Authorization")
+    if not hdr or not hdr.startswith("Bearer "):
+        return None
+    token = hdr.split(" ", 1)[1]
+    try:
+        return require_token(token, db)
+    except Exception:
+        return None

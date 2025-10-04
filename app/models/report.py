@@ -9,6 +9,7 @@ class ReportConfiguration(Base):
     parameters = Column(JSON, nullable=False)
     procedure_name = Column(String(255), nullable=False)
     is_active = Column(BigInteger, nullable=False, default=1)
+    authorized_required = Column(BigInteger, nullable=False, default=1)
     creation_date = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
     modification_date = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
 
